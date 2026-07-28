@@ -13,6 +13,7 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpClient<exodus_party.Services.YouTubeSearchService>();
 
 var app = builder.Build();
 
