@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using exodus_party.Data;
 using exodus_party.Models;
+using exodus_party.Services;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,22 +10,40 @@ namespace exodus_party.Controllers
     [ApiController]
     [Route("api/[controller]")]
 
+
+
     public class TrackHistoryController : Controller
     {
         private readonly AppDbContext _context;
-        public TrackHistoryController(AppDbContext context)
+        private readonly YouTubeSearchService _youTubeSearch;
+        public TrackHistoryController(AppDbContext context, YouTubeSearchService youTubeSearchService)
         {
             _context = context;
+            _youTubeSearch = youTubeSearchService;
         }
 
         [HttpPost]
-      
-        public async Task<IActionResult> SaveMusic([FromBody] TrackHistory track)
+
+        public async Task<IActionResult> SaveMusic([FromBody] NewMusicRequest request)
         {
-            track.PlayedAt = DateTime.UtcNow;
-            _context.TrackHistories.Add(track);
+            var searchTerm = $"{request.ArtisName} {request.TrackName}";
+            var videoId = await _youTubeSearch.SearchVideoIdAsync(searchTerm);
+            if (string.IsNullOrEmpty(videoId))
+            {
+                return NotFound(new { message = "Música não encontrada no YouTube." });
+            }
+            var newMusic = new TrackHistory
+            {
+                TrackName = request.TrackName,
+                ArtistName = request.ArtisName,
+                YoutubeVideoId = videoId,
+                PlayedAt = DateTime.UtcNow
+            };
+
+            _context.TrackHistories.Add(newMusic);
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Música salva com sucesso no Exodus Party!", music = track });
+            
+            return Ok(new { message = "Música salva com sucesso no Exodus Party!", music = newMusic });
         }
         [HttpGet("atual")]
         public async Task<IActionResult> GetCurrentSong()
@@ -42,5 +61,10 @@ namespace exodus_party.Controllers
         }
 
 
+    }
+    public class NewMusicRequest
+    {
+        public string TrackName { get; set; }
+        public string ArtisName { get; set; }
     }
 }
