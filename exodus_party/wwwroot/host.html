@@ -1,0 +1,119 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exodus Party - Host Panel</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .painel {
+            background-color: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 400px;
+            margin: 0 auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+            background-color: #3d3d3d;
+            color: white;
+        }
+
+        button {
+            background-color: #1DB954;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 95%;
+            margin-top: 10px;
+        }
+
+            button:hover {
+                background-color: #1ed760;
+            }
+
+        #mensagem {
+            margin-top: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Mesa de Som 🎛️</h1>
+
+    <div class="painel">
+        <h3>Tocar Nova Música</h3>
+        <input type="text" id="artista" placeholder="Nome do Artista (ex: Kanye West)" required>
+        <input type="text" id="musica" placeholder="Nome da Música (ex: Stronger)" required>
+
+        <button onclick="enviarMusica()">Disparar para a Live</button>
+
+        <div id="mensagem"></div>
+    </div>
+
+    <script>
+        async function enviarMusica() {
+            const artistaInput = document.getElementById("artista").value;
+            const musicaInput = document.getElementById("musica").value;
+            const mensagemDiv = document.getElementById("mensagem");
+
+            if (!artistaInput || !musicaInput) {
+                mensagemDiv.innerText = "⚠️ Preencha os dois campos!";
+                mensagemDiv.style.color = "orange";
+                return;
+            }
+
+            mensagemDiv.innerText = "⏳ Buscando no YouTube e disparando...";
+            mensagemDiv.style.color = "#aaaaaa";
+
+            const pedido = {
+                TrackName: musicaInput,
+                ArtistName: artistaInput
+            };
+
+            try {
+                const response = await fetch("/api/TrackHistory", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(pedido)
+                });
+
+                if (response.ok) {
+                    mensagemDiv.innerText = "✅ Música no ar!";
+                    mensagemDiv.style.color = "#1DB954";
+
+                    document.getElementById("artista").value = "";
+                    document.getElementById("musica").value = "";
+                } else {
+                    mensagemDiv.innerText = "❌ Música não encontrada no YouTube.";
+                    mensagemDiv.style.color = "red";
+                }
+            } catch (erro) {
+                mensagemDiv.innerText = "🔴 Falha na conexão com o servidor.";
+                mensagemDiv.style.color = "red";
+                console.error(erro);
+            }
+        }
+    </script>
+</body>
+</html>

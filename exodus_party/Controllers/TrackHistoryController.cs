@@ -30,7 +30,7 @@ namespace exodus_party.Controllers
 
         public async Task<IActionResult> SaveMusic([FromBody] NewMusicRequest request)
         {
-            var searchTerm = $"{request.ArtisName} {request.TrackName}";
+            var searchTerm = $"{request.ArtistName} {request.TrackName}";
             var videoId = await _youTubeSearch.SearchVideoIdAsync(searchTerm);
             if (string.IsNullOrEmpty(videoId))
             {
@@ -39,7 +39,7 @@ namespace exodus_party.Controllers
             var newMusic = new TrackHistory
             {
                 TrackName = request.TrackName,
-                ArtistName = request.ArtisName,
+                ArtistName = request.ArtistName,
                 YoutubeVideoId = videoId,
                 PlayedAt = DateTime.UtcNow
             };
@@ -71,6 +71,6 @@ namespace exodus_party.Controllers
     public class NewMusicRequest
     {
         public string TrackName { get; set; }
-        public string ArtisName { get; set; }
+        public string ArtistName { get; set; }
     }
 }
