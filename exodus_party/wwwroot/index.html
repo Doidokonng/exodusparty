@@ -41,17 +41,59 @@
             .withUrl("/partyhub")
             .build();
 
+        
+        function tocarVideo(artista, musica, videoId, segundosIniciais = 0) {
+            document.getElementById("tituloMusica").innerText = "Tocando agora: " + artista + " - " + musica;
+
+            
+            let url = "https://www.youtube.com/embed/" + videoId + "?autoplay=1";
+
+            
+            if (segundosIniciais > 0) {
+                url += "&start=" + segundosIniciais;
+            }
+
+            document.getElementById("ytPlayer").src = url;
+        }
+
+        
         connection.on("ReceberNovaMusica", function (musica) {
             console.log("O Host colocou uma música nova!", musica);
-
-            document.getElementById("tituloMusica").innerText = "Tocando agora: " + musica.artistName + " - " + musica.trackName;
-
-            document.getElementById("ytPlayer").src = "https://www.youtube.com/embed/" + musica.youtubeVideoId + "?autoplay=1";
+            tocarVideo(musica.artistName, musica.trackName, musica.youtubeVideoId, 0);
         });
 
+        
+        async function GetCurrentSong() {
+            try {
+                const resposta = await fetch("/api/TrackHistory/atual");
+                if (resposta.ok) {
+                    const musica = await resposta.json();
+
+                    
+                    const momentoInicio = new Date(musica.playedAt + (musica.playedAt.endsWith('Z') ? '' : 'Z'));
+                    const momentoAtual = new Date();
+
+                    
+                    const diferencaEmSegundos = Math.floor((momentoAtual - momentoInicio) / 1000);
+
+                    
+                    const segundosParaPular = diferencaEmSegundos > 0 ? diferencaEmSegundos : 0;
+
+                    console.log(`Sincronizando... Pulando ${segundosParaPular} segundos do vídeo.`);
+                    tocarVideo(musica.artistName, musica.trackName, musica.youtubeVideoId, segundosParaPular);
+                }
+            } catch (erro) {
+                console.error("Erro ao sincronizar música:", erro);
+            }
+        }
+
+        
         connection.start().then(function () {
             document.getElementById("statusConexao").innerText = "🟢 Conectado à Live!";
             document.getElementById("statusConexao").style.color = "#1DB954";
+
+            GetCurrentSong();
+
         }).catch(function (err) {
             document.getElementById("statusConexao").innerText = "🔴 Erro ao conectar.";
             document.getElementById("statusConexao").style.color = "red";
