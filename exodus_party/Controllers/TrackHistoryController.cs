@@ -4,6 +4,8 @@ using exodus_party.Models;
 using exodus_party.Services;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
+using exodus_party.Hubs;
 
 namespace exodus_party.Controllers
 {
@@ -16,10 +18,12 @@ namespace exodus_party.Controllers
     {
         private readonly AppDbContext _context;
         private readonly YouTubeSearchService _youTubeSearch;
-        public TrackHistoryController(AppDbContext context, YouTubeSearchService youTubeSearchService)
+        private readonly IHubContext<PartyHub> _hubContext;
+        public TrackHistoryController(AppDbContext context, YouTubeSearchService youTubeSearchService, IHubContext hubContext)
         {
             _context = context;
             _youTubeSearch = youTubeSearchService;
+            _hubContext = hubContext;
         }
 
         [HttpPost]
@@ -42,6 +46,8 @@ namespace exodus_party.Controllers
 
             _context.TrackHistories.Add(newMusic);
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("ReceberNovaMusica", newMusic);
             
             return Ok(new { message = "Música salva com sucesso no Exodus Party!", music = newMusic });
         }
