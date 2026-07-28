@@ -19,7 +19,7 @@ namespace exodus_party.Controllers
         private readonly AppDbContext _context;
         private readonly YouTubeSearchService _youTubeSearch;
         private readonly IHubContext<PartyHub> _hubContext;
-        public TrackHistoryController(AppDbContext context, YouTubeSearchService youTubeSearchService, IHubContext hubContext)
+        public TrackHistoryController(AppDbContext context, YouTubeSearchService youTubeSearchService, IHubContext<PartyHub> hubContext)
         {
             _context = context;
             _youTubeSearch = youTubeSearchService;

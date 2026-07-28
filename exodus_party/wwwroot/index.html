@@ -1,10 +1,62 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <meta charset="utf-8" />
-    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exodus Party - Live Stream</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        h1 {
+            color: #1DB954;
+        }
+
+        .player-container {
+            margin-top: 30px;
+        }
+    </style>
 </head>
 <body>
 
+    <h1>Exodus Party 🎶</h1>
+    <h3 id="statusConexao">Conectando ao servidor...</h3>
+    <h2 id="tituloMusica">Nenhuma música tocando no momento</h2>
+
+    <div class="player-container">
+        <iframe id="ytPlayer" width="720" height="405" src=""
+                frameborder="0" allow="autoplay; encrypted-media" allowfullscreen>
+        </iframe>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/partyhub")
+            .build();
+
+        connection.on("ReceberNovaMusica", function (musica) {
+            console.log("O Host colocou uma música nova!", musica);
+
+            document.getElementById("tituloMusica").innerText = "Tocando agora: " + musica.artistName + " - " + musica.trackName;
+
+            document.getElementById("ytPlayer").src = "https://www.youtube.com/embed/" + musica.youtubeVideoId + "?autoplay=1";
+        });
+
+        connection.start().then(function () {
+            document.getElementById("statusConexao").innerText = "🟢 Conectado à Live!";
+            document.getElementById("statusConexao").style.color = "#1DB954";
+        }).catch(function (err) {
+            document.getElementById("statusConexao").innerText = "🔴 Erro ao conectar.";
+            document.getElementById("statusConexao").style.color = "red";
+            console.error(err.toString());
+        });
+    </script>
 </body>
 </html>
