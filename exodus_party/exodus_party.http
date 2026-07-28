@@ -1,0 +1,6 @@
+@exodus_party_HostAddress = http://localhost:5086
+
+GET {{exodus_party_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
