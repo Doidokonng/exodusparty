@@ -133,7 +133,7 @@
     <div class="container">
         <div class="coluna-esquerda">
             <div class="video-wrapper">
-                <iframe id="ytPlayer" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                <div id="ytPlayer"></div>
                 <div id="escudoEspectador"></div>
             </div>
 
@@ -165,14 +165,10 @@
         const parametros = new URLSearchParams(window.location.search);
         const partyId = parseInt(parametros.get("partyId"));
         const nomeParty = parametros.get("nome");
-
         const isHost = parametros.get("host") === "true";
 
-        if (!partyId) {
-            window.location.href = "/host.html";
-        } else {
-            document.getElementById("nomeDaParty").innerText = "🎧 " + nomeParty + " 🎧";
-        }
+        if (!partyId) window.location.href = "/host.html";
+        else document.getElementById("nomeDaParty").innerText = "🎧 " + nomeParty + " 🎧";
 
         if (isHost) {
             document.getElementById("painelHost").style.display = "block";
@@ -180,23 +176,79 @@
             document.getElementById("painelEspectador").style.display = "none";
         }
 
-        const connection = new signalR.HubConnectionBuilder().withUrl("/partyhub").build();
+        let player;
+        let playerPronto = false;
+        let videoPendente = null;
 
-        function tocarVideo(artista, musica, videoId, segundosIniciais = 0) {
-            document.getElementById("tituloMusica").innerText = "Tocando agora: " + artista + " - " + musica;
-            let url = "https://www.youtube.com/embed/" + videoId + "?autoplay=1";
-            if (segundosIniciais > 0) url += "&start=" + segundosIniciais;
-            document.getElementById("ytPlayer").src = url;
+        const tagYT = document.createElement('script');
+        tagYT.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tagYT, firstScriptTag);
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('ytPlayer', {
+                height: '405',
+                width: '720',
+                playerVars: { 'autoplay': 1, 'controls': isHost ? 1 : 0 },
+                events: {
+                    'onReady': aoPlayerFicarPronto,
+                    'onStateChange': aoMudarEstadoDoPlayer
+                }
+            });
         }
 
+        function aoPlayerFicarPronto(event) {
+            playerPronto = true;
+            if (videoPendente) {
+                tocarVideoAPI(videoPendente.id, videoPendente.start);
+            }
+        }
+
+        function aoMudarEstadoDoPlayer(event) {
+            if (!isHost) return;
+
+            if (event.data === YT.PlayerState.PAUSED) {
+                connection.invoke("PausarVideo", partyId);
+            } else if (event.data === YT.PlayerState.PLAYING) {
+                connection.invoke("DarPlayVideo", partyId);
+            }
+        }
+
+        function tocarVideoAPI(videoId, startSeconds = 0) {
+            document.getElementById("tituloMusica").innerText = "Sincronizado e Tocando...";
+
+            if (!playerPronto) {
+                videoPendente = { id: videoId, start: startSeconds };
+                return;
+            }
+
+            player.loadVideoById({ videoId: videoId, startSeconds: startSeconds });
+        }
+
+
+        const connection = new signalR.HubConnectionBuilder().withUrl("/partyhub").build();
+
         connection.on("ReceberNovaMusica", function (musica) {
-            if (musica.partyId === partyId) tocarVideo(musica.artistName, musica.trackName, musica.youtubeVideoId, 0);
+            if (musica.partyId === partyId) {
+                tocarVideoAPI(musica.youtubeVideoId, 0);
+                document.getElementById("tituloMusica").innerText = `Tocando: ${musica.artistName} - ${musica.trackName}`;
+            }
+        });
+
+        connection.on("ReceberComandoPause", function (idSala) {
+            if (idSala === partyId && playerPronto && !isHost) {
+                player.pauseVideo();
+            }
+        });
+
+        connection.on("ReceberComandoPlay", function (idSala) {
+            if (idSala === partyId && playerPronto && !isHost) {
+                player.playVideo();
+            }
         });
 
         connection.on("ReceberNovaIndicacao", function (sugestao) {
-            if (sugestao.partyId === partyId) {
-                adicionarSugestaoNaTela(sugestao);
-            }
+            if (sugestao.partyId === partyId) adicionarSugestaoNaTela(sugestao);
         });
 
         connection.on("RemoverIndicacaoDaTela", function (id) {
@@ -204,25 +256,23 @@
             if (box) box.remove();
         });
 
+
         async function enviarIndicacao() {
             const artist = document.getElementById("specArtist").value;
             const track = document.getElementById("specTrack").value;
             if (!artist || !track) { alert("Preencha tudo!"); return; }
 
-            const payload = { trackName: track, artistName: artist, partyId: partyId };
-
             const response = await fetch("/api/Suggestion", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ trackName: track, artistName: artist, partyId: partyId })
             });
 
-            const data = await response.json();
             if (response.ok) {
-                alert("✅ Indicação enviada!");
                 document.getElementById("specArtist").value = "";
                 document.getElementById("specTrack").value = "";
             } else {
+                const data = await response.json();
                 alert("⚠️ " + data.message);
             }
         }
@@ -230,20 +280,16 @@
         async function dispararMusicaHost(trackName = null, artistName = null, suggestionId = null) {
             const artist = artistName || document.getElementById("hostArtist").value;
             const track = trackName || document.getElementById("hostTrack").value;
-
             if (!artist || !track) return;
-
-            const payload = { trackName: track, artistName: artist, partyId: partyId };
 
             await fetch("/api/TrackHistory", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ trackName: track, artistName: artist, partyId: partyId })
             });
 
             if (suggestionId !== null) {
                 await fetch(`/api/Suggestion/concluir/${suggestionId}`, { method: "PUT" });
-
                 const box = document.getElementById("sugestao-box-" + suggestionId);
                 if (box) box.remove();
             }
@@ -255,11 +301,9 @@
             div.id = "sugestao-box-" + sugestao.id;
 
             let html = `<span><strong>${sugestao.artistName}</strong> - ${sugestao.trackName}</span>`;
-
             if (isHost) {
                 html += `<button class="btn-tocar" onclick="dispararMusicaHost('${sugestao.trackName}', '${sugestao.artistName}', ${sugestao.id})">Tocar Agora</button>`;
             }
-
             div.innerHTML = html;
             document.getElementById("listaIndicacoes").appendChild(div);
         }
@@ -269,9 +313,10 @@
                 const resMusica = await fetch(`/api/TrackHistory/atual/${partyId}`);
                 if (resMusica.ok) {
                     const musica = await resMusica.json();
+                    document.getElementById("tituloMusica").innerText = `Tocando: ${musica.artistName} - ${musica.trackName}`;
                     const momentoInicio = new Date(musica.playedAt + (musica.playedAt.endsWith('Z') ? '' : 'Z'));
                     const segundos = Math.floor((new Date() - momentoInicio) / 1000);
-                    tocarVideo(musica.artistName, musica.trackName, musica.youtubeVideoId, segundos > 0 ? segundos : 0);
+                    tocarVideoAPI(musica.youtubeVideoId, segundos > 0 ? segundos : 0);
                 }
             } catch (e) { }
 
