@@ -63,6 +63,22 @@ namespace exodus_party.Controllers
             return Ok(pendentes);
         }
 
+        [HttpPut("concluir/{id}")]
+        public async Task<IActionResult> CompleteSuggestion(int id)
+        {
+            var suggestion = await _context.Suggestions.FindAsync(id);
+            if (suggestion == null)
+            {
+                return NotFound();
+            }
+
+            suggestion.Status = "Tocada";
+            await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("RemoverIndicacaoDaTela", id);
+
+            return Ok(new { message = "Sugestão arquivada com sucesso." });
+        }
+
     }
 
     public class NewSuggestionRequest 

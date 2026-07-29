@@ -3,102 +3,288 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exodus Party - Live Stream</title>
+    <title>Exodus Party - Live Room</title>
     <style>
         body {
             background-color: #121212;
             color: #ffffff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
             text-align: center;
-            margin-top: 50px;
+            margin-bottom: 20px;
         }
 
-        h1 {
+        .neon-text {
             color: #1DB954;
+            text-shadow: 0 0 15px #1DB954;
+            font-size: 2.5em;
+            text-transform: uppercase;
+            margin: 0;
         }
 
-        .player-container {
-            margin-top: 30px;
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .coluna-esquerda {
+            flex: 2;
+        }
+
+        .coluna-direita {
+            flex: 1;
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+
+            .video-wrapper iframe {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+            }
+
+        #escudoEspectador {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            background: transparent;
+        }
+
+        .painel {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+            .painel input {
+                width: calc(50% - 15px);
+                padding: 10px;
+                margin: 5px;
+                border-radius: 5px;
+                border: none;
+                background-color: #3d3d3d;
+                color: white;
+            }
+
+            .painel button {
+                background-color: #1DB954;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+                width: 100%;
+                margin-top: 10px;
+            }
+
+                .painel button:hover {
+                    background-color: #1ed760;
+                }
+
+        .sugestao-item {
+            background-color: #2d2d2d;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-tocar {
+            background-color: #ff4500;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-    <h1>Exodus Party 🎶</h1>
-    <h3 id="statusConexao">Conectando ao servidor...</h3>
-    <h2 id="tituloMusica">Nenhuma música tocando no momento</h2>
+    <div class="header">
+        <h1 class="neon-text" id="nomeDaParty">Carregando Sala...</h1>
+        <p id="tituloMusica">Aguardando o Host soltar o som...</p>
+    </div>
 
-    <div class="player-container">
-        <iframe id="ytPlayer" width="720" height="405" src=""
-                frameborder="0" allow="autoplay; encrypted-media" allowfullscreen>
-        </iframe>
+    <div class="container">
+        <div class="coluna-esquerda">
+            <div class="video-wrapper">
+                <iframe id="ytPlayer" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                <div id="escudoEspectador"></div>
+            </div>
+
+            <div class="painel" id="painelHost" style="display: none; border: 2px solid #ff4500;">
+                <h3 style="margin-top:0; color: #ff4500;">👑 Controles do Host</h3>
+                <input type="text" id="hostArtist" placeholder="Artista">
+                <input type="text" id="hostTrack" placeholder="Música">
+                <button onclick="dispararMusicaHost()">Tocar Imediatamente</button>
+            </div>
+
+            <div class="painel" id="painelEspectador">
+                <h3 style="margin-top:0;">💡 Indicar Música</h3>
+                <input type="text" id="specArtist" placeholder="Artista (ex: Kanye West)">
+                <input type="text" id="specTrack" placeholder="Música (ex: Stronger)">
+                <button onclick="enviarIndicacao()">Sugerir para o Host</button>
+            </div>
+        </div>
+
+        <div class="coluna-direita">
+            <h2 style="margin-top:0;">Fila de Indicações</h2>
+            <div id="listaIndicacoes">
+            </div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 
     <script>
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/partyhub")
-            .build();
+        const parametros = new URLSearchParams(window.location.search);
+        const partyId = parseInt(parametros.get("partyId"));
+        const nomeParty = parametros.get("nome");
 
-        
+        const isHost = parametros.get("host") === "true";
+
+        if (!partyId) {
+            window.location.href = "/host.html";
+        } else {
+            document.getElementById("nomeDaParty").innerText = "🎧 " + nomeParty + " 🎧";
+        }
+
+        if (isHost) {
+            document.getElementById("painelHost").style.display = "block";
+            document.getElementById("escudoEspectador").style.display = "none";
+            document.getElementById("painelEspectador").style.display = "none";
+        }
+
+        const connection = new signalR.HubConnectionBuilder().withUrl("/partyhub").build();
+
         function tocarVideo(artista, musica, videoId, segundosIniciais = 0) {
             document.getElementById("tituloMusica").innerText = "Tocando agora: " + artista + " - " + musica;
-
-            
             let url = "https://www.youtube.com/embed/" + videoId + "?autoplay=1";
-
-            
-            if (segundosIniciais > 0) {
-                url += "&start=" + segundosIniciais;
-            }
-
+            if (segundosIniciais > 0) url += "&start=" + segundosIniciais;
             document.getElementById("ytPlayer").src = url;
         }
 
-        
         connection.on("ReceberNovaMusica", function (musica) {
-            console.log("O Host colocou uma música nova!", musica);
-            tocarVideo(musica.artistName, musica.trackName, musica.youtubeVideoId, 0);
+            if (musica.partyId === partyId) tocarVideo(musica.artistName, musica.trackName, musica.youtubeVideoId, 0);
         });
 
-        
-        async function GetCurrentSong() {
-            try {
-                const resposta = await fetch("/api/TrackHistory/atual");
-                if (resposta.ok) {
-                    const musica = await resposta.json();
+        connection.on("ReceberNovaIndicacao", function (sugestao) {
+            if (sugestao.partyId === partyId) {
+                adicionarSugestaoNaTela(sugestao);
+            }
+        });
 
-                    
-                    const momentoInicio = new Date(musica.playedAt + (musica.playedAt.endsWith('Z') ? '' : 'Z'));
-                    const momentoAtual = new Date();
+        connection.on("RemoverIndicacaoDaTela", function (id) {
+            const box = document.getElementById("sugestao-box-" + id);
+            if (box) box.remove();
+        });
 
-                    
-                    const diferencaEmSegundos = Math.floor((momentoAtual - momentoInicio) / 1000);
+        async function enviarIndicacao() {
+            const artist = document.getElementById("specArtist").value;
+            const track = document.getElementById("specTrack").value;
+            if (!artist || !track) { alert("Preencha tudo!"); return; }
 
-                    
-                    const segundosParaPular = diferencaEmSegundos > 0 ? diferencaEmSegundos : 0;
+            const payload = { trackName: track, artistName: artist, partyId: partyId };
 
-                    console.log(`Sincronizando... Pulando ${segundosParaPular} segundos do vídeo.`);
-                    tocarVideo(musica.artistName, musica.trackName, musica.youtubeVideoId, segundosParaPular);
-                }
-            } catch (erro) {
-                console.error("Erro ao sincronizar música:", erro);
+            const response = await fetch("/api/Suggestion", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                alert("✅ Indicação enviada!");
+                document.getElementById("specArtist").value = "";
+                document.getElementById("specTrack").value = "";
+            } else {
+                alert("⚠️ " + data.message);
             }
         }
 
-        
-        connection.start().then(function () {
-            document.getElementById("statusConexao").innerText = "🟢 Conectado à Live!";
-            document.getElementById("statusConexao").style.color = "#1DB954";
+        async function dispararMusicaHost(trackName = null, artistName = null, suggestionId = null) {
+            const artist = artistName || document.getElementById("hostArtist").value;
+            const track = trackName || document.getElementById("hostTrack").value;
 
-            GetCurrentSong();
+            if (!artist || !track) return;
 
-        }).catch(function (err) {
-            document.getElementById("statusConexao").innerText = "🔴 Erro ao conectar.";
-            document.getElementById("statusConexao").style.color = "red";
-            console.error(err.toString());
-        });
+            const payload = { trackName: track, artistName: artist, partyId: partyId };
+
+            await fetch("/api/TrackHistory", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (suggestionId !== null) {
+                await fetch(`/api/Suggestion/concluir/${suggestionId}`, { method: "PUT" });
+
+                const box = document.getElementById("sugestao-box-" + suggestionId);
+                if (box) box.remove();
+            }
+        }
+
+        function adicionarSugestaoNaTela(sugestao) {
+            const div = document.createElement("div");
+            div.className = "sugestao-item";
+            div.id = "sugestao-box-" + sugestao.id;
+
+            let html = `<span><strong>${sugestao.artistName}</strong> - ${sugestao.trackName}</span>`;
+
+            if (isHost) {
+                html += `<button class="btn-tocar" onclick="dispararMusicaHost('${sugestao.trackName}', '${sugestao.artistName}', ${sugestao.id})">Tocar Agora</button>`;
+            }
+
+            div.innerHTML = html;
+            document.getElementById("listaIndicacoes").appendChild(div);
+        }
+
+        async function carregarSala() {
+            try {
+                const resMusica = await fetch(`/api/TrackHistory/atual/${partyId}`);
+                if (resMusica.ok) {
+                    const musica = await resMusica.json();
+                    const momentoInicio = new Date(musica.playedAt + (musica.playedAt.endsWith('Z') ? '' : 'Z'));
+                    const segundos = Math.floor((new Date() - momentoInicio) / 1000);
+                    tocarVideo(musica.artistName, musica.trackName, musica.youtubeVideoId, segundos > 0 ? segundos : 0);
+                }
+            } catch (e) { }
+
+            try {
+                const resFila = await fetch(`/api/Suggestion/pendentes/${partyId}`);
+                if (resFila.ok) {
+                    const pendentes = await resFila.json();
+                    pendentes.forEach(adicionarSugestaoNaTela);
+                }
+            } catch (e) { }
+        }
+
+        connection.start().then(carregarSala);
     </script>
 </body>
 </html>
