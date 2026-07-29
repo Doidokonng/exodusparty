@@ -41,7 +41,8 @@ namespace exodus_party.Controllers
                 TrackName = request.TrackName,
                 ArtistName = request.ArtistName,
                 YoutubeVideoId = videoId,
-                PlayedAt = DateTime.UtcNow
+                PlayedAt = DateTime.UtcNow,
+                PartyId = request.PartyId
             };
 
             _context.TrackHistories.Add(newMusic);
@@ -51,10 +52,11 @@ namespace exodus_party.Controllers
             
             return Ok(new { message = "Música salva com sucesso no Exodus Party!", music = newMusic });
         }
-        [HttpGet("atual")]
-        public async Task<IActionResult> GetCurrentSong()
+        [HttpGet("atual/{partyId}")]
+        public async Task<IActionResult> GetCurrentSong(int partyId)
         {
             var currentSong = await _context.TrackHistories
+            .Where(t => t.PartyId == partyId)
             .OrderByDescending(t => t.Id)
             .FirstOrDefaultAsync();
 
@@ -72,5 +74,6 @@ namespace exodus_party.Controllers
     {
         public string TrackName { get; set; }
         public string ArtistName { get; set; }
+        public int PartyId { get; set; }
     }
 }

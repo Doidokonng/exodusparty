@@ -1,4 +1,6 @@
-﻿namespace exodus_party.Models
+﻿using System.Text.Json.Serialization;
+
+namespace exodus_party.Models
 {
     public class TrackHistory
     {
@@ -7,5 +9,9 @@
         public string TrackName { get; set; } = string.Empty;
         public string ArtistName { get; set; } = string.Empty;
         public DateTime PlayedAt { get; set; }
+        public int PartyId { get; set; }
+        
+        [JsonIgnore]
+        public Party Party { get; set; }
     }
 }

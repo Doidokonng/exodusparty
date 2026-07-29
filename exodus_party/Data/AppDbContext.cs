@@ -10,5 +10,6 @@ namespace exodus_party.Data
         }
 
         public DbSet<TrackHistory> TrackHistories { get; set; }
+        public DbSet<Party> Parties { get; set; }
     }
 }

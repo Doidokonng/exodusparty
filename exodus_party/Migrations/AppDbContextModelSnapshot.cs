@@ -22,6 +22,29 @@ namespace exodus_party.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("exodus_party.Models.Party", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PlaylistUrl")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Parties");
+                });
+
             modelBuilder.Entity("exodus_party.Models.TrackHistory", b =>
                 {
                     b.Property<int>("Id")
@@ -33,6 +56,9 @@ namespace exodus_party.Migrations
                     b.Property<string>("ArtistName")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<int>("PartyId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("PlayedAt")
                         .HasColumnType("datetime(6)");
@@ -47,7 +73,25 @@ namespace exodus_party.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("PartyId");
+
                     b.ToTable("TrackHistories");
+                });
+
+            modelBuilder.Entity("exodus_party.Models.TrackHistory", b =>
+                {
+                    b.HasOne("exodus_party.Models.Party", "Party")
+                        .WithMany("Tracks")
+                        .HasForeignKey("PartyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Party");
+                });
+
+            modelBuilder.Entity("exodus_party.Models.Party", b =>
+                {
+                    b.Navigation("Tracks");
                 });
 #pragma warning restore 612, 618
         }
