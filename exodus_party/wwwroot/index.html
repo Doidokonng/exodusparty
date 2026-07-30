@@ -35,6 +35,9 @@
 
         .coluna-esquerda {
             flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .coluna-direita {
@@ -44,37 +47,124 @@
             border-radius: 10px;
         }
 
-        .video-wrapper {
-            position: relative;
-            padding-bottom: 56.25%;
+        #ytPlayerContainer {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: 0;
             height: 0;
             overflow: hidden;
-            border-radius: 10px;
         }
 
-            .video-wrapper iframe {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
+        .custom-player {
+            background: linear-gradient(180deg, #2a2a2a 0%, #181818 100%);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+        }
+
+        .album-cover {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            margin-bottom: 25px;
+            background-color: #000;
+        }
+
+        .track-info {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+            .track-info h2 {
+                margin: 0;
+                font-size: 1.8em;
+                font-weight: bold;
             }
 
-        #escudoEspectador {
-            position: absolute;
-            top: 0;
-            left: 0;
+            .track-info h3 {
+                margin: 5px 0 0 0;
+                font-size: 1.2em;
+                color: #b3b3b3;
+                font-weight: normal;
+            }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 0.8em;
+            color: #b3b3b3;
+        }
+
+        .progress-bar {
+            flex: 1;
+            -webkit-appearance: none;
             width: 100%;
-            height: 100%;
-            z-index: 10;
-            background: transparent;
+            height: 6px;
+            background: #4d4d4d;
+            border-radius: 5px;
+            outline: none;
+        }
+
+            .progress-bar::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: #fff;
+                cursor: pointer;
+            }
+
+        .player-controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .btn-control {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+            .btn-control:hover {
+                transform: scale(1.1);
+            }
+
+        .btn-play-pause {
+            background-color: white;
+            color: black;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            cursor: pointer;
+            border: none;
         }
 
         .painel {
             background-color: #2d2d2d;
             padding: 15px;
             border-radius: 8px;
-            margin-top: 15px;
+            margin-top: 25px;
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
         }
 
             .painel input {
@@ -127,18 +217,38 @@
 
     <div class="header">
         <h1 class="neon-text" id="nomeDaParty">Carregando Sala...</h1>
-        <p id="tituloMusica">Aguardando o Host soltar o som...</p>
     </div>
 
     <div class="container">
         <div class="coluna-esquerda">
-            <div class="video-wrapper">
+
+            <div class="custom-player">
+                <img id="capaAlbum" class="album-cover" src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Capa da Música">
+
+                <div class="track-info">
+                    <h2 id="trackTitle">Nenhuma música tocando</h2>
+                    <h3 id="artistName">Aguardando o Host...</h3>
+                </div>
+
+                <div class="progress-container">
+                    <span id="currentTime">0:00</span>
+                    <input type="range" id="progressBar" class="progress-bar" value="0" max="100" step="1" disabled>
+                    <span id="totalTime">0:00</span>
+                </div>
+
+                <div class="player-controls" id="hostPlayerControls" style="display: none;">
+                    <button class="btn-control" onclick="retroceder10s()">⏪</button>
+                    <button class="btn-play-pause" id="btnPlayPause" onclick="togglePlayPause()">⏸</button>
+                    <button class="btn-control" onclick="avancar10s()">⏩</button>
+                </div>
+            </div>
+
+            <div id="ytPlayerContainer">
                 <div id="ytPlayer"></div>
-                <div id="escudoEspectador"></div>
             </div>
 
             <div class="painel" id="painelHost" style="display: none; border: 2px solid #ff4500;">
-                <h3 style="margin-top:0; color: #ff4500;">👑 Controles do Host</h3>
+                <h3 style="margin-top:0; color: #ff4500;">👑 Comandar o Som</h3>
                 <input type="text" id="hostArtist" placeholder="Artista">
                 <input type="text" id="hostTrack" placeholder="Música">
                 <button onclick="dispararMusicaHost()">Tocar Imediatamente</button>
@@ -146,21 +256,19 @@
 
             <div class="painel" id="painelEspectador">
                 <h3 style="margin-top:0;">💡 Indicar Música</h3>
-                <input type="text" id="specArtist" placeholder="Artista (ex: Kanye West)">
-                <input type="text" id="specTrack" placeholder="Música (ex: Stronger)">
-                <button onclick="enviarIndicacao()">Sugerir para o Host</button>
+                <input type="text" id="specArtist" placeholder="Artista">
+                <input type="text" id="specTrack" placeholder="Música">
+                <button onclick="enviarIndicacao()">Sugerir para a Live</button>
             </div>
         </div>
 
         <div class="coluna-direita">
-            <h2 style="margin-top:0;">Fila de Indicações</h2>
-            <div id="listaIndicacoes">
-            </div>
+            <h2 style="margin-top:0;">Fila da Comunidade</h2>
+            <div id="listaIndicacoes"></div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-
     <script>
         const parametros = new URLSearchParams(window.location.search);
         const partyId = parseInt(parametros.get("partyId"));
@@ -172,13 +280,16 @@
 
         if (isHost) {
             document.getElementById("painelHost").style.display = "block";
-            document.getElementById("escudoEspectador").style.display = "none";
             document.getElementById("painelEspectador").style.display = "none";
+            document.getElementById("hostPlayerControls").style.display = "flex";
+            document.getElementById("progressBar").disabled = false;
         }
 
         let player;
         let playerPronto = false;
         let videoPendente = null;
+        let trackerInterval;
+        let isPlaying = false;
 
         const tagYT = document.createElement('script');
         tagYT.src = "https://www.youtube.com/iframe_api";
@@ -187,41 +298,78 @@
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('ytPlayer', {
-                height: '405',
-                width: '720',
-                playerVars: { 'autoplay': 1, 'controls': isHost ? 1 : 0 },
-                events: {
-                    'onReady': aoPlayerFicarPronto,
-                    'onStateChange': aoMudarEstadoDoPlayer
-                }
+                height: '10', width: '10',
+                playerVars: { 'autoplay': 1, 'controls': 0, 'disablekb': 1 },
+                events: { 'onReady': aoPlayerFicarPronto, 'onStateChange': aoMudarEstadoDoPlayer }
             });
         }
 
         function aoPlayerFicarPronto(event) {
             playerPronto = true;
-            if (videoPendente) {
-                tocarVideoAPI(videoPendente.id, videoPendente.start);
-            }
+            iniciarRastreadorDeProgresso();
+            if (videoPendente) tocarVideoAPI(videoPendente.id, videoPendente.start, videoPendente.artista, videoPendente.titulo);
         }
+
+        function atualizarUI(artista, titulo, videoId) {
+            document.getElementById("trackTitle").innerText = titulo;
+            document.getElementById("artistName").innerText = artista;
+            document.getElementById("capaAlbum").src = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+            document.getElementById("btnPlayPause").innerText = "⏸";
+            isPlaying = true;
+        }
+
+        function formatarTempo(segundos) {
+            const min = Math.floor(segundos / 60);
+            const seg = Math.floor(segundos % 60).toString().padStart(2, '0');
+            return `${min}:${seg}`;
+        }
+
+        function iniciarRastreadorDeProgresso() {
+            trackerInterval = setInterval(() => {
+                if (playerPronto && player.getCurrentTime) {
+                    const atual = player.getCurrentTime() || 0;
+                    const total = player.getDuration() || 0;
+
+                    document.getElementById("currentTime").innerText = formatarTempo(atual);
+                    document.getElementById("totalTime").innerText = formatarTempo(total);
+
+                    if (total > 0 && !document.getElementById("progressBar").matches(':active')) {
+                        document.getElementById("progressBar").value = (atual / total) * 100;
+                    }
+                }
+            }, 1000);
+        }
+
+        document.getElementById("progressBar").addEventListener("change", function (e) {
+            if (!isHost || !playerPronto) return;
+            const novoTempo = (e.target.value / 100) * player.getDuration();
+            player.seekTo(novoTempo, true);
+        });
+
+        function togglePlayPause() {
+            if (!playerPronto) return;
+            if (isPlaying) { player.pauseVideo(); connection.invoke("PausarVideo", partyId); }
+            else { player.playVideo(); connection.invoke("DarPlayVideo", partyId); }
+        }
+        function avancar10s() { if (playerPronto) player.seekTo(player.getCurrentTime() + 10, true); }
+        function retroceder10s() { if (playerPronto) player.seekTo(player.getCurrentTime() - 10, true); }
 
         function aoMudarEstadoDoPlayer(event) {
-            if (!isHost) return;
-
-            if (event.data === YT.PlayerState.PAUSED) {
-                connection.invoke("PausarVideo", partyId);
-            } else if (event.data === YT.PlayerState.PLAYING) {
-                connection.invoke("DarPlayVideo", partyId);
+            if (event.data === YT.PlayerState.PLAYING) {
+                isPlaying = true;
+                if (isHost) document.getElementById("btnPlayPause").innerText = "⏸";
+            } else if (event.data === YT.PlayerState.PAUSED) {
+                isPlaying = false;
+                if (isHost) document.getElementById("btnPlayPause").innerText = "▶️";
             }
         }
 
-        function tocarVideoAPI(videoId, startSeconds = 0) {
-            document.getElementById("tituloMusica").innerText = "Sincronizado e Tocando...";
-
+        function tocarVideoAPI(videoId, startSeconds, artista, titulo) {
             if (!playerPronto) {
-                videoPendente = { id: videoId, start: startSeconds };
+                videoPendente = { id: videoId, start: startSeconds, artista: artista, titulo: titulo };
                 return;
             }
-
+            atualizarUI(artista, titulo, videoId);
             player.loadVideoById({ videoId: videoId, startSeconds: startSeconds });
         }
 
@@ -229,65 +377,45 @@
         const connection = new signalR.HubConnectionBuilder().withUrl("/partyhub").build();
 
         connection.on("ReceberNovaMusica", function (musica) {
-            if (musica.partyId === partyId) {
-                tocarVideoAPI(musica.youtubeVideoId, 0);
-                document.getElementById("tituloMusica").innerText = `Tocando: ${musica.artistName} - ${musica.trackName}`;
-            }
+            if (musica.partyId === partyId) tocarVideoAPI(musica.youtubeVideoId, 0, musica.artistName, musica.trackName);
         });
 
         connection.on("ReceberComandoPause", function (idSala) {
-            if (idSala === partyId && playerPronto && !isHost) {
-                player.pauseVideo();
-            }
+            if (idSala === partyId && playerPronto && !isHost) player.pauseVideo();
         });
 
         connection.on("ReceberComandoPlay", function (idSala) {
-            if (idSala === partyId && playerPronto && !isHost) {
-                player.playVideo();
-            }
+            if (idSala === partyId && playerPronto && !isHost) player.playVideo();
         });
 
         connection.on("ReceberNovaIndicacao", function (sugestao) {
             if (sugestao.partyId === partyId) adicionarSugestaoNaTela(sugestao);
         });
-
         connection.on("RemoverIndicacaoDaTela", function (id) {
             const box = document.getElementById("sugestao-box-" + id);
             if (box) box.remove();
         });
 
-
         async function enviarIndicacao() {
             const artist = document.getElementById("specArtist").value;
             const track = document.getElementById("specTrack").value;
             if (!artist || !track) { alert("Preencha tudo!"); return; }
-
             const response = await fetch("/api/Suggestion", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
+                method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ trackName: track, artistName: artist, partyId: partyId })
             });
-
-            if (response.ok) {
-                document.getElementById("specArtist").value = "";
-                document.getElementById("specTrack").value = "";
-            } else {
-                const data = await response.json();
-                alert("⚠️ " + data.message);
-            }
+            if (response.ok) { document.getElementById("specArtist").value = ""; document.getElementById("specTrack").value = ""; }
+            else { const data = await response.json(); alert("⚠️ " + data.message); }
         }
 
         async function dispararMusicaHost(trackName = null, artistName = null, suggestionId = null) {
             const artist = artistName || document.getElementById("hostArtist").value;
             const track = trackName || document.getElementById("hostTrack").value;
             if (!artist || !track) return;
-
             await fetch("/api/TrackHistory", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
+                method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ trackName: track, artistName: artist, partyId: partyId })
             });
-
             if (suggestionId !== null) {
                 await fetch(`/api/Suggestion/concluir/${suggestionId}`, { method: "PUT" });
                 const box = document.getElementById("sugestao-box-" + suggestionId);
@@ -296,16 +424,10 @@
         }
 
         function adicionarSugestaoNaTela(sugestao) {
-            const div = document.createElement("div");
-            div.className = "sugestao-item";
-            div.id = "sugestao-box-" + sugestao.id;
-
+            const div = document.createElement("div"); div.className = "sugestao-item"; div.id = "sugestao-box-" + sugestao.id;
             let html = `<span><strong>${sugestao.artistName}</strong> - ${sugestao.trackName}</span>`;
-            if (isHost) {
-                html += `<button class="btn-tocar" onclick="dispararMusicaHost('${sugestao.trackName}', '${sugestao.artistName}', ${sugestao.id})">Tocar Agora</button>`;
-            }
-            div.innerHTML = html;
-            document.getElementById("listaIndicacoes").appendChild(div);
+            if (isHost) html += `<button class="btn-tocar" onclick="dispararMusicaHost('${sugestao.trackName}', '${sugestao.artistName}', ${sugestao.id})">Tocar Agora</button>`;
+            div.innerHTML = html; document.getElementById("listaIndicacoes").appendChild(div);
         }
 
         async function carregarSala() {
@@ -313,13 +435,11 @@
                 const resMusica = await fetch(`/api/TrackHistory/atual/${partyId}`);
                 if (resMusica.ok) {
                     const musica = await resMusica.json();
-                    document.getElementById("tituloMusica").innerText = `Tocando: ${musica.artistName} - ${musica.trackName}`;
                     const momentoInicio = new Date(musica.playedAt + (musica.playedAt.endsWith('Z') ? '' : 'Z'));
                     const segundos = Math.floor((new Date() - momentoInicio) / 1000);
-                    tocarVideoAPI(musica.youtubeVideoId, segundos > 0 ? segundos : 0);
+                    tocarVideoAPI(musica.youtubeVideoId, segundos > 0 ? segundos : 0, musica.artistName, musica.trackName);
                 }
             } catch (e) { }
-
             try {
                 const resFila = await fetch(`/api/Suggestion/pendentes/${partyId}`);
                 if (resFila.ok) {
